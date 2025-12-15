@@ -1,0 +1,36 @@
+======================================================================
+  STRAVA RACE TIME PREDICTOR - WEB APP
+======================================================================
+
+Loading data...
+Identified 189 potential race activities
+
+Race distance breakdown:
+10K              28
+5K               18
+Half Marathon     1
+Name: race_distance, dtype: int64
+✅ Data loaded successfully!
+   Total activities: 1580
+   Total runs: 1369
+
+======================================================================
+  Starting web server...
+======================================================================
+
+🌐 Open your browser and go to:
+   http://localhost:5001
+
+   Press Ctrl+C to stop the server
+
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.7.242:5001
+Press CTRL+C to quit
+ * Restarting with watchdog (fsevents)
+ * Debugger is active!
+ * Debugger PIN: 948-884-538
+127.0.0.1 - - [15/Dec/2025 15:31:49] "GET / HTTP/1.1" 200 -

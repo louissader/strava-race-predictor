@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Timeline - Strava Race Predictor{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-history text-purple-600 mr-2"></i>
+            Prediction Timeline
+        </h1>
+        <p class="text-gray-600">See how your predicted race times evolved throughout your running career</p>
+    </div>
+
+    <!-- Distance Selector -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Select Race Distance:</label>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button onclick="loadTimeline('5K')" class="distance-btn bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold py-3 px-6 rounded-lg transition-colors">
+                <i class="fas fa-running mr-2"></i>5K
+            </button>
+            <button onclick="loadTimeline('10K')" class="distance-btn bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold py-3 px-6 rounded-lg transition-colors">
+                <i class="fas fa-running mr-2"></i>10K
+            </button>
+            <button onclick="loadTimeline('Half Marathon')" class="distance-btn bg-green-100 hover:bg-green-200 text-green-700 font-semibold py-3 px-6 rounded-lg transition-colors">
+                <i class="fas fa-running mr-2"></i>Half Marathon
+            </button>
+            <button onclick="loadTimeline('Marathon')" class="distance-btn bg-orange-100 hover:bg-orange-200 text-orange-700 font-semibold py-3 px-6 rounded-lg transition-colors">
+                <i class="fas fa-running mr-2"></i>Marathon
+            </button>
+        </div>
+    </div>
+
+    <!-- Timeline Chart -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-bold mb-4 text-gray-900">
+            <i class="fas fa-chart-area text-blue-500 mr-2"></i>
+            Predicted Race Time Evolution
+        </h2>
+        <div id="timeline-chart" style="height: 500px;">
+            <div class="flex items-center justify-center h-full text-gray-400">
+                <div class="text-center">
+                    <i class="fas fa-mouse-pointer text-6xl mb-4"></i>
+                    <p class="text-lg">Select a distance above to view timeline</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Training Context -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-bold mb-4 text-gray-900">
+            <i class="fas fa-info-circle text-purple-500 mr-2"></i>
+            What This Shows
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="border-l-4 border-purple-500 pl-4">
+                <h3 class="font-semibold text-gray-900 mb-2">Prediction Timeline</h3>
+                <p class="text-sm text-gray-600">See how your predicted race time would have changed at different points in your running history based on your training at that time.</p>
+            </div>
+            <div class="border-l-4 border-blue-500 pl-4">
+                <h3 class="font-semibold text-gray-900 mb-2">Training Context</h3>
+                <p class="text-sm text-gray-600">The chart also shows your weekly and monthly training volume, helping you understand the relationship between training and performance.</p>
+            </div>
+            <div class="border-l-4 border-green-500 pl-4">
+                <h3 class="font-semibold text-gray-900 mb-2">Fitness Progression</h3>
+                <p class="text-sm text-gray-600">Watch how your fitness evolved over time - improvements show as lower (faster) predicted times on the chart.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentDistance = null;
+
+    function loadTimeline(distance) {
+        currentDistance = distance;
+
+        // Update button states
+        document.querySelectorAll('.distance-btn').forEach(btn => {
+            btn.classList.remove('ring-4', 'ring-purple-500');
+        });
+        event.target.closest('button').classList.add('ring-4', 'ring-purple-500');
+
+        // Show loading
+        document.getElementById('timeline-chart').innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-6xl text-purple-500 mb-4"></i>
+                    <p class="text-lg text-gray-600">Loading timeline data...</p>
+                </div>
+            </div>
+        `;
+
+        // Fetch timeline data
+        fetch(`/api/timeline_predictions?distance=${encodeURIComponent(distance)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('timeline-chart').innerHTML = `
+                        <div class="flex items-center justify-center h-full text-red-500">
+                            <div class="text-center">
+                                <i class="fas fa-exclamation-triangle text-6xl mb-4"></i>
+                                <p class="text-lg">${data.error}</p>
+                                <p class="text-sm text-gray-500 mt-2">Train a model for this distance first</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                plotTimeline(data, distance);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('timeline-chart').innerHTML = `
+                    <div class="flex items-center justify-center h-full text-red-500">
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-circle text-6xl mb-4"></i>
+                            <p class="text-lg">Error loading data</p>
+                        </div>
+                    </div>
+                `;
+            });
+    }
+
+    function plotTimeline(data, distance) {
+        const dates = data.map(d => d.date);
+        const predictions = data.map(d => d.predicted_time_min);
+        const weeklyDist = data.map(d => d.weekly_distance);
+        const monthlyDist = data.map(d => d.monthly_distance);
+
+        // Predicted time trace
+        const trace1 = {
+            x: dates,
+            y: predictions,
+            name: 'Predicted Time',
+            type: 'scatter',
+            mode: 'lines+markers',
+            line: {color: '#8b5cf6', width: 3},
+            marker: {size: 6},
+            yaxis: 'y'
+        };
+
+        // Weekly distance trace
+        const trace2 = {
+            x: dates,
+            y: weeklyDist,
+            name: 'Weekly Distance (km)',
+            type: 'bar',
+            marker: {color: '#3b82f6', opacity: 0.3},
+            yaxis: 'y2'
+        };
+
+        const layout = {
+            title: `${distance} Predicted Time Over Time`,
+            xaxis: {
+                title: 'Date',
+                type: 'date'
+            },
+            yaxis: {
+                title: 'Predicted Time (minutes)',
+                side: 'left'
+            },
+            yaxis2: {
+                title: 'Weekly Distance (km)',
+                overlaying: 'y',
+                side: 'right'
+            },
+            hovermode: 'x unified',
+            showlegend: true,
+            legend: {x: 0, y: 1.1, orientation: 'h'}
+        };
+
+        const config = {responsive: true};
+
+        Plotly.newPlot('timeline-chart', [trace1, trace2], layout, config);
+    }
+
+    // Auto-load 5K on page load
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            document.querySelector('.distance-btn').click();
+        }, 500);
+    });
+</script>
+{% endblock %}

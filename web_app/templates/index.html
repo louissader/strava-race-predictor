@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Strava Race Predictor{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6">
+    <!-- Hero Section -->
+    <div class="gradient-bg rounded-lg shadow-xl p-8 mb-8 text-white">
+        <h1 class="text-4xl font-bold mb-2">🏃 Your Running Dashboard</h1>
+        <p class="text-lg opacity-90">AI-powered race predictions and comprehensive training analytics</p>
+    </div>
+
+    <!-- Overall Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Total Runs</p>
+                    <p id="total-runs" class="text-3xl font-bold text-gray-900">-</p>
+                </div>
+                <i class="fas fa-running text-4xl text-purple-500"></i>
+            </div>
+        </div>
+
+        <div class="stat-card card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Total Distance</p>
+                    <p id="total-distance" class="text-3xl font-bold text-gray-900">-</p>
+                    <p class="text-xs text-gray-400">kilometers</p>
+                </div>
+                <i class="fas fa-route text-4xl text-blue-500"></i>
+            </div>
+        </div>
+
+        <div class="stat-card card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Total Time</p>
+                    <p id="total-time" class="text-3xl font-bold text-gray-900">-</p>
+                    <p class="text-xs text-gray-400">hours</p>
+                </div>
+                <i class="fas fa-clock text-4xl text-green-500"></i>
+            </div>
+        </div>
+
+        <div class="stat-card card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Average Pace</p>
+                    <p id="avg-pace" class="text-3xl font-bold text-gray-900">-</p>
+                    <p class="text-xs text-gray-400">min/km</p>
+                </div>
+                <i class="fas fa-tachometer-alt text-4xl text-orange-500"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Race Predictions -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-6 text-gray-900">
+            <i class="fas fa-trophy text-yellow-500 mr-2"></i>
+            Race Time Predictions
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="predictions-container">
+            <!-- Predictions will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Race History -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-6 text-gray-900">
+            <i class="fas fa-history text-purple-500 mr-2"></i>
+            Race History
+        </h2>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Distance</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pace</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    </tr>
+                </thead>
+                <tbody id="race-history-table" class="bg-white divide-y divide-gray-200">
+                    <!-- Race history will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Load overall stats
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-runs').textContent = data.total_runs.toLocaleString();
+            document.getElementById('total-distance').textContent = data.total_distance_km.toLocaleString();
+            document.getElementById('total-time').textContent = data.total_time_hours.toLocaleString();
+            document.getElementById('avg-pace').textContent = data.avg_pace;
+        });
+
+    // Load predictions
+    fetch('/api/predictions')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('predictions-container');
+            const distances = ['5K', '10K', 'Half Marathon', 'Marathon'];
+            const colors = ['purple', 'blue', 'green', 'orange'];
+
+            distances.forEach((distance, idx) => {
+                const pred = data[distance];
+                const color = colors[idx];
+
+                let card = `
+                    <div class="border-2 border-${color}-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
+                        <h3 class="text-xl font-bold text-${color}-600 mb-4">${distance}</h3>
+                `;
+
+                if (pred.has_model) {
+                    const bestTime = formatTime(pred.best_time_min);
+                    const avgTime = formatTime(pred.avg_time_min);
+
+                    card += `
+                        <div class="space-y-2">
+                            <div>
+                                <p class="text-sm text-gray-500">Races Run</p>
+                                <p class="text-2xl font-bold text-gray-900">${pred.num_races}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Best Time</p>
+                                <p class="text-lg font-semibold text-green-600">${bestTime}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">Average Time</p>
+                                <p class="text-lg font-semibold text-blue-600">${avgTime}</p>
+                            </div>
+                            <div class="pt-2 border-t border-gray-200">
+                                <p class="text-xs text-gray-500">Model Accuracy</p>
+                                <p class="text-sm font-medium">±${pred.model_accuracy_mae.toFixed(1)} min</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    card += `
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle text-4xl text-gray-300 mb-2"></i>
+                            <p class="text-sm text-gray-500">Need ${5 - pred.num_races} more races</p>
+                            <p class="text-xs text-gray-400 mt-1">to train model</p>
+                        </div>
+                    `;
+                }
+
+                card += `</div>`;
+                container.innerHTML += card;
+            });
+        });
+
+    // Load race history
+    fetch('/api/race_history')
+        .then(response => response.json())
+        .then(data => {
+            const table = document.getElementById('race-history-table');
+
+            data.slice(0, 20).forEach(race => {  // Show latest 20 races
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${race.date}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                ${race.distance}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatTime(race.time_min)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${race.pace} min/km</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${race.name}</td>
+                    </tr>
+                `;
+                table.innerHTML += row;
+            });
+        });
+
+    function formatTime(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const mins = Math.floor(minutes % 60);
+        const secs = Math.floor((minutes % 1) * 60);
+
+        if (hours > 0) {
+            return `${hours}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        } else {
+            return `${mins}:${String(secs).padStart(2, '0')}`;
+        }
+    }
+</script>
+{% endblock %}
