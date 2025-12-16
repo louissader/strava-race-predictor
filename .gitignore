@@ -49,3 +49,7 @@ models/*.joblib
 # Plots
 plots/*.png
 plots/*.jpg
+
+# Logs
+*.log
+web_app.log

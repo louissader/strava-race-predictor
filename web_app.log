@@ -33,4 +33,19 @@ Press CTRL+C to quit
  * Restarting with watchdog (fsevents)
  * Debugger is active!
  * Debugger PIN: 948-884-538
-127.0.0.1 - - [15/Dec/2025 15:31:49] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:23] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:24] "GET /api/stats HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:24] "GET /api/race_history HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:25] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [15/Dec/2025 20:08:36] "GET /analytics HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:36] "GET /api/weekly_patterns HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:36] "GET /api/stats HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:36] "GET /api/pace_distribution HTTP/1.1" 200 -
+/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/pandas/core/arrays/datetimes.py:1162: UserWarning: Converting to PeriodArray/Index representation will drop timezone information.
+  warnings.warn(
+127.0.0.1 - - [15/Dec/2025 20:08:36] "GET /api/training_trends HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:39] "GET /api/predictions HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:52] "GET /timeline HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:53] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [15/Dec/2025 20:08:53] "GET /api/timeline_predictions?distance=5K HTTP/1.1" 200 -
+127.0.0.1 - - [15/Dec/2025 20:08:55] "GET /api/timeline_predictions?distance=10K HTTP/1.1" 200 -
