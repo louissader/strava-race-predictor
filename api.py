@@ -331,7 +331,7 @@ def get_heatmap_coordinates():
 
 @app.route('/api/routes')
 def get_routes():
-    """Fetch GPS polylines with pace data from Strava API"""
+    """Fetch GPS polylines with pace data from Strava API for ALL runs"""
     if activities_df is None:
         load_data()
 
@@ -341,15 +341,21 @@ def get_routes():
 
     runs = activities_df[activities_df['type'] == 'Run'].copy()
 
-    # Get most recent 30 runs with distance > 1 mile
-    recent_runs = runs[runs['distance_km'] > 1.6].nlargest(30, 'start_date')
+    # Get ALL runs (sorted by date, most recent first)
+    all_runs = runs.sort_values('start_date', ascending=False)
 
     routes = []
     center_coords = None
     KM_TO_MILES = 0.621371
 
-    for _, run in recent_runs.iterrows():
+    print(f"Fetching GPS data for {len(all_runs)} runs...")
+
+    for idx, (_, run) in enumerate(all_runs.iterrows()):
         activity_id = run['id']
+
+        # Progress indicator
+        if (idx + 1) % 50 == 0:
+            print(f"  Progress: {idx + 1}/{len(all_runs)} runs processed...")
 
         try:
             # Fetch activity streams from Strava
