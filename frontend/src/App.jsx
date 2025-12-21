@@ -24,7 +24,7 @@ function NavBar() {
       <div className="nav-container">
         <div className="nav-brand">
           <Trophy className="brand-icon" />
-          <span className="brand-text">RunMetrics</span>
+          <span className="brand-text">Louis Sader RunMetrics</span>
         </div>
 
         <div className="nav-links">

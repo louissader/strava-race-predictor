@@ -39,23 +39,39 @@ function Heatmap() {
   const [routes, setRoutes] = useState(null)
   const [center, setCenter] = useState([41.8781, -71.4774]) // Default center
   const [loading, setLoading] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState(0)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     setLoading(true)
+    setLoadingProgress(0)
+
+    // Simulate progress for better UX (actual progress from backend would require WebSocket/polling)
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 90) return prev // Cap at 90% until real data arrives
+        return prev + Math.random() * 10
+      })
+    }, 500)
+
     axios.get(`${API_URL}/routes`)
       .then(res => {
         setRoutes(res.data.routes)
         if (res.data.center) {
           setCenter(res.data.center)
         }
-        setLoading(false)
+        setLoadingProgress(100)
+        clearInterval(progressInterval)
+        setTimeout(() => setLoading(false), 300) // Brief delay to show 100%
       })
       .catch(err => {
         console.error('Error loading routes:', err)
         setError(err.response?.data?.error || 'Failed to load routes')
+        clearInterval(progressInterval)
         setLoading(false)
       })
+
+    return () => clearInterval(progressInterval)
   }, [])
 
   // Group coordinates by pace to create colored segments
@@ -108,11 +124,58 @@ function Heatmap() {
 
       {loading && (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔄</div>
-          <p>Loading GPS routes from Strava...</p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-            This may take a minute as we fetch detailed route data
+          {/* Running person animation */}
+          <div style={{
+            fontSize: '3rem',
+            marginBottom: '1.5rem',
+            animation: 'run 1.5s infinite',
+            display: 'inline-block'
+          }}>
+            🏃‍♂️
+          </div>
+
+          <p style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>
+            Loading GPS routes from Strava...
           </p>
+
+          {/* Progress bar */}
+          <div style={{
+            width: '100%',
+            maxWidth: '400px',
+            height: '8px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            margin: '1.5rem auto',
+            position: 'relative'
+          }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${loadingProgress}%` }}
+              transition={{ duration: 0.3 }}
+              style={{
+                height: '100%',
+                background: 'linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))',
+                borderRadius: '4px',
+                boxShadow: '0 0 10px rgba(0, 245, 212, 0.5)'
+              }}
+            />
+          </div>
+
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+            {Math.round(loadingProgress)}% • Fetching detailed route data...
+          </p>
+
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+            This may take 20-30 seconds for recent runs
+          </p>
+
+          <style>{`
+            @keyframes run {
+              0%, 100% { transform: translateX(-10px) scale(1); }
+              50% { transform: translateX(10px) scale(1.1); }
+            }
+          `}</style>
         </div>
       )}
 

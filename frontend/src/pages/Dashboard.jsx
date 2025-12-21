@@ -84,8 +84,8 @@ function Dashboard({ stats }) {
             style={{ background: 'linear-gradient(135deg, var(--bg-card), rgba(255, 210, 63, 0.1))' }}
           >
             <Zap size={32} color="var(--accent-tertiary)" style={{ marginBottom: '1rem' }} />
-            <div className="stat-value">{stats.best_pace}</div>
-            <div className="stat-label">Best Pace (min/mi)</div>
+            <div className="stat-value">{stats.avg_pace}</div>
+            <div className="stat-label">Average Pace (min/mi)</div>
           </motion.div>
 
           <motion.div
