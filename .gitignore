@@ -53,3 +53,11 @@ plots/*.jpg
 # Logs
 *.log
 web_app.log
+
+# React/Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+*.log
+api.log
+frontend.log

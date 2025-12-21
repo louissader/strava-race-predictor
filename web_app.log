@@ -49,3 +49,86 @@ Press CTRL+C to quit
 127.0.0.1 - - [15/Dec/2025 20:08:53] "GET /favicon.ico HTTP/1.1" 404 -
 127.0.0.1 - - [15/Dec/2025 20:08:53] "GET /api/timeline_predictions?distance=5K HTTP/1.1" 200 -
 127.0.0.1 - - [15/Dec/2025 20:08:55] "GET /api/timeline_predictions?distance=10K HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:27:01] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:27:02] "GET /api/race_history HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:27:02] "GET /api/stats HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:27:02] "GET /api/predictions HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:27:02] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [17/Dec/2025 20:28:40] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:28:40] "GET /api/race_history HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:28:40] "GET /api/stats HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:28:40] "GET /api/predictions HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:28:43] "GET /analytics HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:28:43] "GET /api/stats HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:28:43] "GET /api/pace_distribution HTTP/1.1" 200 -
+/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/pandas/core/arrays/datetimes.py:1162: UserWarning: Converting to PeriodArray/Index representation will drop timezone information.
+  warnings.warn(
+127.0.0.1 - - [17/Dec/2025 20:28:43] "GET /api/weekly_patterns HTTP/1.1" 200 -
+127.0.0.1 - - [17/Dec/2025 20:28:43] "GET /api/training_trends HTTP/1.1" 200 -
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/__init__.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/__init__.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/core.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/core.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/decorator.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/decorator.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/extension.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/extension.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/version.py', reloading
+ * Detected change in '/Users/louissader/opt/anaconda3/lib/python3.9/site-packages/flask_cors/version.py', reloading
+======================================================================
+  STRAVA RACE TIME PREDICTOR - WEB APP
+======================================================================
+
+Loading data...
+Identified 189 potential race activities
+
+Race distance breakdown:
+10K              28
+5K               18
+Half Marathon     1
+Name: race_distance, dtype: int64
+✅ Data loaded successfully!
+   Total activities: 1580
+   Total runs: 1369
+
+======================================================================
+  Starting web server...
+======================================================================
+
+🌐 Open your browser and go to:
+   http://localhost:5001
+
+   Press Ctrl+C to stop the server
+
+ * Restarting with watchdog (fsevents)
+ * Debugger is active!
+ * Debugger PIN: 948-884-538
+ * Detected change in '/Users/louissader/Strava Project/api.py.tmp.27687.1766289512031', reloading
+======================================================================
+  STRAVA RACE TIME PREDICTOR - WEB APP
+======================================================================
+
+Loading data...
+Identified 189 potential race activities
+
+Race distance breakdown:
+10K              28
+5K               18
+Half Marathon     1
+Name: race_distance, dtype: int64
+✅ Data loaded successfully!
+   Total activities: 1580
+   Total runs: 1369
+
+======================================================================
+  Starting web server...
+======================================================================
+
+🌐 Open your browser and go to:
+   http://localhost:5001
+
+   Press Ctrl+C to stop the server
+
+ * Restarting with watchdog (fsevents)
+ * Debugger is active!
+ * Debugger PIN: 948-884-538
