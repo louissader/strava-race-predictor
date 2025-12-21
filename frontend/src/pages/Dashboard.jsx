@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Trophy, Zap, Mountain, Target, TrendingUp, Award } from 'lucide-react'
 import axios from 'axios'
@@ -51,7 +51,7 @@ function Dashboard({ stats }) {
           Your Running Journey 🏃‍♂️
         </h1>
         <p className="page-subtitle">
-          {stats ? `${stats.total_runs} runs • ${stats.total_distance_km} km • ${stats.total_time_hours} hours of pure determination` : 'Loading your stats...'}
+          {stats ? `${stats.total_runs} runs • ${stats.total_distance_mi} mi • ${stats.total_time_hours} hours of pure determination` : 'Loading your stats...'}
         </p>
       </div>
 
@@ -74,8 +74,8 @@ function Dashboard({ stats }) {
             style={{ background: 'linear-gradient(135deg, var(--bg-card), rgba(255, 107, 157, 0.1))' }}
           >
             <Target size={32} color="var(--accent-secondary)" style={{ marginBottom: '1rem' }} />
-            <div className="stat-value">{stats.total_distance_km}</div>
-            <div className="stat-label">Kilometers</div>
+            <div className="stat-value">{stats.total_distance_mi}</div>
+            <div className="stat-label">Miles</div>
           </motion.div>
 
           <motion.div
@@ -85,7 +85,7 @@ function Dashboard({ stats }) {
           >
             <Zap size={32} color="var(--accent-tertiary)" style={{ marginBottom: '1rem' }} />
             <div className="stat-value">{stats.best_pace}</div>
-            <div className="stat-label">Best Pace (min/km)</div>
+            <div className="stat-label">Best Pace (min/mi)</div>
           </motion.div>
 
           <motion.div
@@ -94,8 +94,8 @@ function Dashboard({ stats }) {
             style={{ background: 'linear-gradient(135deg, var(--bg-card), rgba(74, 222, 128, 0.1))' }}
           >
             <Mountain size={32} color="var(--success)" style={{ marginBottom: '1rem' }} />
-            <div className="stat-value">{Math.round(stats.total_elevation_m)}</div>
-            <div className="stat-label">Elevation Gain (m)</div>
+            <div className="stat-value">{Math.round(stats.total_elevation_ft)}</div>
+            <div className="stat-label">Elevation Gain (ft)</div>
           </motion.div>
         </div>
       )}
@@ -175,7 +175,7 @@ function Dashboard({ stats }) {
                 }}>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{run.name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    <span>{run.distance_km.toFixed(2)} km</span>
+                    <span>{run.distance_mi.toFixed(2)} mi</span>
                     <span>{formatDate(run.start_date)}</span>
                   </div>
                 </div>
@@ -202,8 +202,8 @@ function Dashboard({ stats }) {
                 }}>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{run.name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    <span>{run.pace_min_per_km.toFixed(2)} min/km</span>
-                    <span>{run.distance_km.toFixed(2)} km</span>
+                    <span>{run.pace_min_per_mi.toFixed(2)} min/mi</span>
+                    <span>{run.distance_mi.toFixed(2)} mi</span>
                   </div>
                 </div>
               ))}
@@ -229,8 +229,8 @@ function Dashboard({ stats }) {
                 }}>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{run.name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    <span>{run.total_elevation_gain.toFixed(0)} m gain</span>
-                    <span>{run.distance_km.toFixed(2)} km</span>
+                    <span>{run.elevation_ft.toFixed(0)} ft gain</span>
+                    <span>{run.distance_mi.toFixed(2)} mi</span>
                   </div>
                 </div>
               ))}
@@ -256,8 +256,8 @@ function Dashboard({ stats }) {
                 }}>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{run.name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    <span>{run.pace_min_per_km.toFixed(2)} min/km</span>
-                    <span>{run.distance_km.toFixed(2)} km</span>
+                    <span>{run.pace_min_per_mi.toFixed(2)} min/mi</span>
+                    <span>{run.distance_mi.toFixed(2)} mi</span>
                   </div>
                 </div>
               ))}

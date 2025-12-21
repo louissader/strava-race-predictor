@@ -37,48 +37,62 @@ def health():
 
 @app.route('/api/stats')
 def get_stats():
-    """Get overall statistics"""
+    """Get overall statistics (in miles)"""
     if activities_df is None:
         load_data()
 
     runs = activities_df[activities_df['type'] == 'Run'].copy()
 
+    # Convert km to miles (1 km = 0.621371 miles)
+    KM_TO_MILES = 0.621371
+
+    # Calculate pace in min/mile from min/km
+    avg_pace_min_per_mile = runs['pace_min_per_km'].mean() / KM_TO_MILES
+    best_pace_min_per_mile = runs['pace_min_per_km'].min() / KM_TO_MILES
+
     stats = {
         'total_activities': int(len(activities_df)),
         'total_runs': int(len(runs)),
-        'total_distance_km': round(float(runs['distance_km'].sum()), 1),
+        'total_distance_mi': round(float(runs['distance_km'].sum() * KM_TO_MILES), 1),
         'total_time_hours': round(float(runs['moving_time_min'].sum() / 60), 1),
-        'avg_pace': round(float(runs['pace_min_per_km'].mean()), 2),
-        'best_pace': round(float(runs['pace_min_per_km'].min()), 2),
-        'longest_run_km': round(float(runs['distance_km'].max()), 1),
+        'avg_pace': round(float(avg_pace_min_per_mile), 2),
+        'best_pace': round(float(best_pace_min_per_mile), 2),
+        'longest_run_mi': round(float(runs['distance_km'].max() * KM_TO_MILES), 1),
         'first_run_date': runs['start_date'].min().strftime('%Y-%m-%d'),
         'last_run_date': runs['start_date'].max().strftime('%Y-%m-%d'),
-        'total_elevation_m': round(float(runs['total_elevation_gain'].sum()), 0),
+        'total_elevation_ft': round(float(runs['total_elevation_gain'].sum() * 3.28084), 0),  # meters to feet
     }
 
     return jsonify(stats)
 
 @app.route('/api/impressive-activities')
 def get_impressive_activities():
-    """Get most impressive activities - longest runs, fastest paces, highest elevation"""
+    """Get most impressive activities - longest runs, fastest paces, highest elevation (in miles)"""
     if activities_df is None:
         load_data()
 
     runs = activities_df[activities_df['type'] == 'Run'].copy()
 
+    KM_TO_MILES = 0.621371
+    M_TO_FT = 3.28084
+
     # Longest runs
-    longest = runs.nlargest(5, 'distance_km')[['name', 'distance_km', 'start_date', 'moving_time_min', 'pace_min_per_km', 'total_elevation_gain']].to_dict('records')
+    longest_raw = runs.nlargest(5, 'distance_km')[['name', 'distance_km', 'start_date', 'moving_time_min', 'pace_min_per_km', 'total_elevation_gain']].to_dict('records')
+    longest = [{**r, 'distance_mi': r['distance_km'] * KM_TO_MILES, 'pace_min_per_mi': r['pace_min_per_km'] / KM_TO_MILES, 'elevation_ft': r['total_elevation_gain'] * M_TO_FT} for r in longest_raw]
 
     # Fastest paces (filter out unrealistic paces)
-    fastest_pace = runs[runs['pace_min_per_km'] > 2.5].nsmallest(5, 'pace_min_per_km')[['name', 'distance_km', 'start_date', 'pace_min_per_km', 'moving_time_min']].to_dict('records')
+    fastest_raw = runs[runs['pace_min_per_km'] > 2.5].nsmallest(5, 'pace_min_per_km')[['name', 'distance_km', 'start_date', 'pace_min_per_km', 'moving_time_min']].to_dict('records')
+    fastest_pace = [{**r, 'distance_mi': r['distance_km'] * KM_TO_MILES, 'pace_min_per_mi': r['pace_min_per_km'] / KM_TO_MILES} for r in fastest_raw]
 
     # Highest elevation gain
-    highest_elevation = runs[runs['total_elevation_gain'] > 0].nlargest(5, 'total_elevation_gain')[['name', 'distance_km', 'start_date', 'total_elevation_gain', 'pace_min_per_km']].to_dict('records')
+    highest_raw = runs[runs['total_elevation_gain'] > 0].nlargest(5, 'total_elevation_gain')[['name', 'distance_km', 'start_date', 'total_elevation_gain', 'pace_min_per_km']].to_dict('records')
+    highest_elevation = [{**r, 'distance_mi': r['distance_km'] * KM_TO_MILES, 'elevation_ft': r['total_elevation_gain'] * M_TO_FT, 'pace_min_per_mi': r['pace_min_per_km'] / KM_TO_MILES} for r in highest_raw]
 
     # Most consistent (similar pace across long distance)
     long_runs = runs[runs['distance_km'] > 10]
     if len(long_runs) > 0:
-        consistent = long_runs.nsmallest(5, 'pace_min_per_km')[['name', 'distance_km', 'start_date', 'pace_min_per_km', 'moving_time_min']].to_dict('records')
+        consistent_raw = long_runs.nsmallest(5, 'pace_min_per_km')[['name', 'distance_km', 'start_date', 'pace_min_per_km', 'moving_time_min']].to_dict('records')
+        consistent = [{**r, 'distance_mi': r['distance_km'] * KM_TO_MILES, 'pace_min_per_mi': r['pace_min_per_km'] / KM_TO_MILES} for r in consistent_raw]
     else:
         consistent = []
 
