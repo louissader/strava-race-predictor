@@ -1,24 +1,41 @@
 # Strava Race Time Predictor
 
-A machine learning project that fetches your Strava activities and predicts race times based on your training data.
+A full-stack web application that visualizes your Strava running data and predicts race times using machine learning.
 
-## Features
+![React](https://img.shields.io/badge/React-18.3-blue) ![Flask](https://img.shields.io/badge/Flask-3.0-green) ![Python](https://img.shields.io/badge/Python-3.9+-yellow)
 
-- **Automatic Data Fetching**: Downloads all your activities from Strava API
+## Live Demo
+
+Interactive React web application with:
+- 📊 **Dashboard** - Real-time statistics and impressive activities
+- 🗺️ **GPS Heatmap** - Routes colored by pace with Leaflet maps
+- 📈 **Race Predictions** - ML-powered time predictions for all distances
+- 📉 **Analytics** - Training trends and performance insights
+
+## Key Features
+
+### Frontend (React 18 + Vite)
+- **Interactive Dashboard**: Real-time running statistics (total miles, elevation, pace trends)
+- **GPS Route Heatmap**: Visualizes ALL runs with pace-based color coding
+  - Red (≤6:00/mi) to Blue (≥11:00/mi) gradient
+  - GPS polyline rendering with Leaflet
+  - Shows exactly where you sped up or slowed down
+- **Race Predictions**: ML model predictions displayed in clean cards
+- **Responsive Design**: Custom cyberpunk-inspired UI with Framer Motion animations
+- **Client-Side Routing**: React Router v6 for smooth navigation
+
+### Backend (Flask REST API)
+- **Strava OAuth 2.0**: Automatic token refresh for API access
+- **Real-time GPS Fetching**: Pulls detailed activity streams (coordinates, pace, elevation)
+- **ML Pipeline**: Random Forest/Gradient Boosting models for race prediction
+- **Unit Conversion**: All data served in miles and feet
+- **CORS-enabled**: Seamless React integration
+
+### Machine Learning
 - **Smart Race Detection**: Identifies potential race activities (5K, 10K, Half Marathon, Marathon)
-- **Feature Engineering**: Extracts 30+ training features including:
-  - Weekly/monthly mileage and training volume
-  - Average pace trends over different time periods
-  - Longest runs and elevation gain
-  - Best recent performances
-- **Multiple ML Models**: Trains and compares Random Forest, Gradient Boosting, Ridge, and Lasso models
-- **Comprehensive Visualizations**:
-  - Training volume over time
-  - Pace progression and distribution
-  - Weekly running patterns
-  - Elevation analysis
-  - Model performance metrics
-- **Race Time Predictions**: Predicts finish times for 5K, 10K, Half Marathon, and Marathon
+- **Feature Engineering**: 30+ training features including volume, pace trends, elevation
+- **Multiple Models**: Compares Random Forest, Gradient Boosting, Ridge, and Lasso
+- **Cross-Validation**: Ensures robust predictions
 
 ## Quick Start
 
@@ -74,7 +91,27 @@ This will:
 
 ## Usage
 
-### Option 1: Use the Quick Start Script (Recommended)
+### Web Application (Recommended)
+
+Start the full-stack React app:
+
+```bash
+./run_react_app.sh
+```
+
+This will:
+1. Start the Flask API server on `http://localhost:5001`
+2. Start the React dev server on `http://localhost:5173`
+3. Open the app in your browser
+
+**Tech Stack:**
+- Frontend: React 18, Vite, React Router v6, Leaflet, Framer Motion, Axios
+- Backend: Flask, Flask-CORS, pandas, scikit-learn
+- API Integration: Strava OAuth 2.0 with automatic token refresh
+
+### Command Line Tools
+
+#### Option 1: Use the Quick Start Script
 
 ```bash
 python quickstart.py
@@ -171,6 +208,8 @@ Using your current training data, the model predicts your race time based on:
 
 ```
 Strava Project/
+├── api.py                      # Flask REST API server
+├── run_react_app.sh            # Launch script for web app
 ├── strava_auth.py              # OAuth authentication helper
 ├── fetch_strava_data.py        # Downloads activities from Strava
 ├── data_preprocessing.py       # Feature engineering and data prep
@@ -181,6 +220,18 @@ Strava Project/
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Environment variables template
 ├── .env                        # Your credentials (not in git)
+├── frontend/                   # React web application
+│   ├── src/
+│   │   ├── App.jsx            # Main app component with routing
+│   │   ├── main.jsx           # React entry point
+│   │   ├── index.css          # Global styles
+│   │   └── pages/
+│   │       ├── Dashboard.jsx  # Homepage with stats
+│   │       ├── Heatmap.jsx    # GPS route visualization
+│   │       ├── Analytics.jsx  # Training analytics
+│   │       └── Timeline.jsx   # Prediction timeline
+│   ├── package.json           # Node dependencies
+│   └── vite.config.js         # Vite configuration
 ├── data/
 │   ├── strava_activities.csv   # Raw activity data
 │   ├── race_features.csv       # Processed race features
