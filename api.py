@@ -11,6 +11,11 @@ from datetime import datetime, timedelta
 import joblib
 from data_preprocessing import load_activities, create_race_dataset, calculate_training_features
 import os
+import requests
+import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
@@ -18,6 +23,40 @@ CORS(app)  # Enable CORS for React frontend
 # Global data
 activities_df = None
 race_df = None
+access_token_cache = None
+
+def get_access_token():
+    """Get fresh Strava access token using refresh token"""
+    global access_token_cache
+
+    refresh_token = os.getenv('STRAVA_REFRESH_TOKEN')
+    client_id = os.getenv('STRAVA_CLIENT_ID')
+    client_secret = os.getenv('STRAVA_CLIENT_SECRET')
+
+    if not all([refresh_token, client_id, client_secret]):
+        print("Missing Strava credentials in .env file")
+        return None
+
+    # Request new access token
+    auth_url = "https://www.strava.com/oauth/token"
+    payload = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'refresh_token': refresh_token,
+        'grant_type': 'refresh_token'
+    }
+
+    try:
+        response = requests.post(auth_url, data=payload)
+        if response.status_code == 200:
+            access_token_cache = response.json()['access_token']
+            return access_token_cache
+        else:
+            print(f"Failed to get access token: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"Error getting access token: {e}")
+        return None
 
 def load_data():
     """Load activities and race data"""
@@ -288,6 +327,94 @@ def get_heatmap_coordinates():
         'coordinates': coordinates,
         'center': [41.8781, -71.4774],
         'note': 'Simulated data - integrate Strava polyline API for actual routes'
+    })
+
+@app.route('/api/routes')
+def get_routes():
+    """Fetch GPS polylines with pace data from Strava API"""
+    if activities_df is None:
+        load_data()
+
+    access_token = get_access_token()
+    if not access_token:
+        return jsonify({'error': 'Failed to get Strava access token'}), 401
+
+    runs = activities_df[activities_df['type'] == 'Run'].copy()
+
+    # Get most recent 30 runs with distance > 1 mile
+    recent_runs = runs[runs['distance_km'] > 1.6].nlargest(30, 'start_date')
+
+    routes = []
+    center_coords = None
+    KM_TO_MILES = 0.621371
+
+    for _, run in recent_runs.iterrows():
+        activity_id = run['id']
+
+        try:
+            # Fetch activity streams from Strava
+            stream_url = f'https://www.strava.com/api/v3/activities/{activity_id}/streams'
+            params = {'keys': 'latlng,time,distance', 'key_by_type': True}
+            headers = {'Authorization': f'Bearer {access_token}'}
+
+            response = requests.get(stream_url, headers=headers, params=params)
+
+            if response.status_code == 200:
+                streams = response.json()
+
+                # Check if we have GPS data
+                if 'latlng' in streams and streams['latlng']['data']:
+                    latlng_data = streams['latlng']['data']
+                    time_data = streams.get('time', {}).get('data', [])
+                    distance_data = streams.get('distance', {}).get('data', [])
+
+                    # Set map center to first activity's midpoint
+                    if not center_coords and latlng_data:
+                        mid_idx = len(latlng_data) // 2
+                        center_coords = latlng_data[mid_idx]
+
+                    # Calculate pace for each segment
+                    paces = []
+                    for i in range(1, len(time_data)):
+                        time_diff = time_data[i] - time_data[i-1]  # seconds
+                        dist_diff = (distance_data[i] - distance_data[i-1]) / 1000  # km
+
+                        if dist_diff > 0.01:  # At least 10 meters
+                            pace_min_per_km = (time_diff / 60) / dist_diff
+                            pace_min_per_mi = pace_min_per_km / KM_TO_MILES
+
+                            # Filter unrealistic paces (< 3 min/mi or > 20 min/mi)
+                            if 3 < pace_min_per_mi < 20:
+                                paces.append(pace_min_per_mi)
+                            else:
+                                paces.append(None)
+                        else:
+                            paces.append(None)
+
+                    # Add first point with no pace
+                    paces.insert(0, None)
+
+                    routes.append({
+                        'activity_id': int(activity_id),
+                        'name': run['name'],
+                        'date': run['start_date'].strftime('%Y-%m-%d'),
+                        'coordinates': latlng_data,
+                        'paces': paces,
+                        'avg_pace': round(run['pace_min_per_km'] / KM_TO_MILES, 2)
+                    })
+
+        except Exception as e:
+            print(f"Error fetching streams for activity {activity_id}: {e}")
+            continue
+
+    # Default center if no GPS data found
+    if not center_coords:
+        center_coords = [41.8781, -71.4774]  # Default to Providence, RI
+
+    return jsonify({
+        'routes': routes,
+        'center': center_coords,
+        'total_routes': len(routes)
     })
 
 if __name__ == '__main__':
