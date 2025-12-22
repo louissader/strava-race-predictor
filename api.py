@@ -331,32 +331,59 @@ def get_heatmap_coordinates():
 
 @app.route('/api/routes')
 def get_routes():
-    """Fetch GPS polylines with pace data from Strava API for recent 150 runs"""
+    """Fetch GPS polylines with pace data - uses cache for speed"""
     if activities_df is None:
         load_data()
 
+    # Check if we should use cache or force refresh
+    force_refresh = request.args.get('refresh', 'false').lower() == 'true'
+
+    # Try to load from cache first
+    cache_file = 'data/gps_routes_cache.json'
+    if not force_refresh and os.path.exists(cache_file):
+        try:
+            print("Loading GPS routes from cache...")
+            with open(cache_file, 'r') as f:
+                cached_data = json.load(f)
+
+            # Check if cache is recent (within 24 hours)
+            cache_time = datetime.fromisoformat(cached_data.get('cached_at', '2000-01-01'))
+            if datetime.now() - cache_time < timedelta(hours=24):
+                print(f"✅ Loaded {len(cached_data['routes'])} routes from cache")
+                return jsonify({
+                    'routes': cached_data['routes'],
+                    'center': cached_data['center'],
+                    'total_routes': len(cached_data['routes']),
+                    'cached': True,
+                    'cached_at': cached_data['cached_at']
+                })
+            else:
+                print("Cache is stale (>24 hours), fetching fresh data...")
+        except Exception as e:
+            print(f"Error loading cache: {e}")
+
+    # Cache miss or refresh requested - fetch from Strava
     access_token = get_access_token()
     if not access_token:
         return jsonify({'error': 'Failed to get Strava access token'}), 401
 
     runs = activities_df[activities_df['type'] == 'Run'].copy()
 
-    # Get most recent 150 runs (sorted by date, most recent first)
-    # Limited to 150 to balance coverage vs load time (~30 seconds)
-    recent_runs = runs.sort_values('start_date', ascending=False).head(150)
+    # Get ALL runs (sorted by date, most recent first)
+    all_runs = runs.sort_values('start_date', ascending=False)
 
     routes = []
     center_coords = None
     KM_TO_MILES = 0.621371
 
-    print(f"Fetching GPS data for {len(recent_runs)} most recent runs...")
+    print(f"Fetching GPS data for ALL {len(all_runs)} runs (this will take 5-10 minutes)...")
 
-    for idx, (_, run) in enumerate(recent_runs.iterrows()):
+    for idx, (_, run) in enumerate(all_runs.iterrows()):
         activity_id = run['id']
 
         # Progress indicator
         if (idx + 1) % 50 == 0:
-            print(f"  Progress: {idx + 1}/{len(recent_runs)} runs processed...")
+            print(f"  Progress: {idx + 1}/{len(all_runs)} runs processed...")
 
         try:
             # Fetch activity streams from Strava
@@ -418,10 +445,26 @@ def get_routes():
     if not center_coords:
         center_coords = [41.8781, -71.4774]  # Default to Providence, RI
 
+    # Save to cache
+    try:
+        cache_data = {
+            'routes': routes,
+            'center': center_coords,
+            'cached_at': datetime.now().isoformat(),
+            'total_runs_fetched': len(all_runs),
+            'routes_with_gps': len(routes)
+        }
+        with open(cache_file, 'w') as f:
+            json.dump(cache_data, f)
+        print(f"✅ Saved {len(routes)} routes to cache")
+    except Exception as e:
+        print(f"Error saving cache: {e}")
+
     return jsonify({
         'routes': routes,
         'center': center_coords,
-        'total_routes': len(routes)
+        'total_routes': len(routes),
+        'cached': False
     })
 
 if __name__ == '__main__':

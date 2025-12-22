@@ -118,7 +118,7 @@ function Heatmap() {
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 className="page-title">Route Heatmap 🗺️</h1>
         <p className="page-subtitle">
-          GPS routes colored by pace • {routes ? `${routes.length} recent runs` : 'Loading...'}
+          GPS routes colored by pace • {routes ? `${routes.length} runs loaded` : 'Loading...'}
         </p>
       </div>
 
