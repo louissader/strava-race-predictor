@@ -14,8 +14,24 @@ import os
 import requests
 import json
 from dotenv import load_dotenv
+import math
 
 load_dotenv()
+
+def simplify_route(coords, paces, tolerance=0.0001):
+    """Simplify GPS route using Douglas-Peucker algorithm to reduce data size"""
+    if len(coords) <= 2:
+        return coords, paces
+
+    # Use every Nth point for very long routes (> 1000 points)
+    if len(coords) > 1000:
+        step = max(1, len(coords) // 500)  # Reduce to ~500 points
+        indices = list(range(0, len(coords), step))
+        if indices[-1] != len(coords) - 1:
+            indices.append(len(coords) - 1)  # Always include last point
+        return [coords[i] for i in indices], [paces[i] if i < len(paces) else None for i in indices]
+
+    return coords, paces
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
@@ -350,10 +366,22 @@ def get_routes():
             cache_time = datetime.fromisoformat(cached_data.get('cached_at', '2000-01-01'))
             if datetime.now() - cache_time < timedelta(days=7):
                 print(f"✅ Loaded {len(cached_data['routes'])} routes from cache")
+
+                # Simplify routes before sending to reduce response size
+                simplified_routes = []
+                for route in cached_data['routes']:
+                    coords, paces = simplify_route(route['coordinates'], route['paces'])
+                    simplified_routes.append({
+                        **route,
+                        'coordinates': coords,
+                        'paces': paces
+                    })
+
+                print(f"📦 Simplified routes for faster transfer")
                 return jsonify({
-                    'routes': cached_data['routes'],
+                    'routes': simplified_routes,
                     'center': cached_data['center'],
-                    'total_routes': len(cached_data['routes']),
+                    'total_routes': len(simplified_routes),
                     'cached': True,
                     'cached_at': cached_data['cached_at']
                 })
