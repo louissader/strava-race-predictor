@@ -57,6 +57,16 @@ function Heatmap() {
 
     axios.get(`${API_URL}/routes`)
       .then(res => {
+        console.log('Routes API response:', res.data)
+        console.log('Number of routes:', res.data.routes?.length)
+
+        if (!res.data.routes || res.data.routes.length === 0) {
+          setError('No routes found in API response')
+          clearInterval(progressInterval)
+          setLoading(false)
+          return
+        }
+
         setRoutes(res.data.routes)
         if (res.data.center) {
           setCenter(res.data.center)
@@ -67,7 +77,8 @@ function Heatmap() {
       })
       .catch(err => {
         console.error('Error loading routes:', err)
-        setError(err.response?.data?.error || 'Failed to load routes')
+        console.error('Error details:', err.response || err.message)
+        setError(err.response?.data?.error || err.message || 'Failed to load routes')
         clearInterval(progressInterval)
         setLoading(false)
       })
