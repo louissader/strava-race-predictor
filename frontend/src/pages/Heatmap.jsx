@@ -41,6 +41,7 @@ function Heatmap() {
   const [loading, setLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [error, setError] = useState(null)
+  const [displayLimit, setDisplayLimit] = useState(100) // Limit routes displayed on map
 
   useEffect(() => {
     setLoading(true)
@@ -201,6 +202,51 @@ function Heatmap() {
 
       {!loading && !error && routes && routes.length > 0 && (
         <>
+          {/* Display info and controls */}
+          <div className="card" style={{ marginBottom: '1rem', padding: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  Showing <span style={{ color: 'var(--accent-primary)', fontWeight: '600' }}>{Math.min(displayLimit, routes.length)}</span> of <span style={{ color: 'var(--accent-primary)', fontWeight: '600' }}>{routes.length}</span> routes on map
+                </p>
+              </div>
+              {routes.length > displayLimit && (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => setDisplayLimit(prev => Math.min(prev + 100, routes.length))}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: 'var(--accent-primary)',
+                      color: '#000',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Load 100 More
+                  </button>
+                  <button
+                    onClick={() => setDisplayLimit(routes.length)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: 'rgba(0, 245, 212, 0.1)',
+                      color: 'var(--accent-primary)',
+                      border: '1px solid var(--accent-primary)',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Load All ({routes.length})
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div style={{
             height: '600px',
             borderRadius: '12px',
@@ -271,7 +317,7 @@ function Heatmap() {
               />
 
               {/* Draw polylines for each route with pace-based coloring */}
-              {routes.map((route, idx) => {
+              {routes.slice(0, displayLimit).map((route, idx) => {
                 const segments = getRouteSegments(route)
 
                 return segments.map((segment, segIdx) => (
