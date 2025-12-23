@@ -18,20 +18,25 @@ import math
 
 load_dotenv()
 
-def simplify_route(coords, paces, tolerance=0.0001):
-    """Simplify GPS route using Douglas-Peucker algorithm to reduce data size"""
-    if len(coords) <= 2:
+def simplify_route(coords, paces, max_points=50):
+    """Simplify GPS route by keeping every Nth point to reduce data size dramatically"""
+    if len(coords) <= max_points:
         return coords, paces
 
-    # Use every Nth point for very long routes (> 1000 points)
-    if len(coords) > 1000:
-        step = max(1, len(coords) // 500)  # Reduce to ~500 points
-        indices = list(range(0, len(coords), step))
-        if indices[-1] != len(coords) - 1:
-            indices.append(len(coords) - 1)  # Always include last point
-        return [coords[i] for i in indices], [paces[i] if i < len(paces) else None for i in indices]
+    # Calculate step size to get approximately max_points
+    step = max(1, len(coords) // max_points)
 
-    return coords, paces
+    # Sample every Nth point
+    indices = list(range(0, len(coords), step))
+
+    # Always include the last point
+    if indices[-1] != len(coords) - 1:
+        indices.append(len(coords) - 1)
+
+    simplified_coords = [coords[i] for i in indices]
+    simplified_paces = [paces[i] if i < len(paces) else None for i in indices]
+
+    return simplified_coords, simplified_paces
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
