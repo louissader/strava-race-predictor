@@ -346,9 +346,9 @@ def get_routes():
             with open(cache_file, 'r') as f:
                 cached_data = json.load(f)
 
-            # Check if cache is recent (within 24 hours)
+            # Check if cache is recent (within 7 days)
             cache_time = datetime.fromisoformat(cached_data.get('cached_at', '2000-01-01'))
-            if datetime.now() - cache_time < timedelta(hours=24):
+            if datetime.now() - cache_time < timedelta(days=7):
                 print(f"✅ Loaded {len(cached_data['routes'])} routes from cache")
                 return jsonify({
                     'routes': cached_data['routes'],
@@ -358,7 +358,7 @@ def get_routes():
                     'cached_at': cached_data['cached_at']
                 })
             else:
-                print("Cache is stale (>24 hours), fetching fresh data...")
+                print("Cache is stale (>7 days), fetching fresh data...")
         except Exception as e:
             print(f"Error loading cache: {e}")
 
