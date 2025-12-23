@@ -58,7 +58,11 @@ function Heatmap() {
     axios.get(`${API_URL}/routes`, {
       timeout: 120000, // 2 minute timeout for large response
       maxContentLength: Infinity,
-      maxBodyLength: Infinity
+      maxBodyLength: Infinity,
+      responseType: 'json',
+      headers: {
+        'Accept': 'application/json'
+      }
     })
       .then(res => {
         console.log('Response received, keys:', Object.keys(res.data))
