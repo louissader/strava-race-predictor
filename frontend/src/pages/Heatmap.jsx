@@ -55,19 +55,28 @@ function Heatmap() {
       })
     }, 500)
 
-    axios.get(`${API_URL}/routes`)
+    axios.get(`${API_URL}/routes`, {
+      timeout: 120000, // 2 minute timeout for large response
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity
+    })
       .then(res => {
-        console.log('Routes API response:', res.data)
-        console.log('Number of routes:', res.data.routes?.length)
+        console.log('Response received, keys:', Object.keys(res.data))
+        console.log('Routes is array?', Array.isArray(res.data.routes))
+        console.log('Number of routes:', res.data.routes ? res.data.routes.length : 'routes is null/undefined')
+        console.log('Response data type:', typeof res.data)
 
-        if (!res.data.routes || res.data.routes.length === 0) {
+        const routesData = res.data.routes || []
+
+        if (routesData.length === 0) {
           setError('No routes found in API response')
           clearInterval(progressInterval)
           setLoading(false)
           return
         }
 
-        setRoutes(res.data.routes)
+        console.log('Setting routes state with', routesData.length, 'routes')
+        setRoutes(routesData)
         if (res.data.center) {
           setCenter(res.data.center)
         }
