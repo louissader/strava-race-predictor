@@ -36,40 +36,39 @@ function MapController({ center }) {
 }
 
 function Heatmap() {
-  const [routes, setRoutes] = useState(null)
+  const [routes, setRoutes] = useState([])
   const [center, setCenter] = useState([41.8781, -71.4774]) // Default center
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
   const [error, setError] = useState(null)
   const [displayLimit, setDisplayLimit] = useState(100) // Limit routes displayed on map
+  const [totalAvailable, setTotalAvailable] = useState(0) // Total routes available on server
+  const [hasMore, setHasMore] = useState(false) // Whether more routes are available on server
 
+  // Initial load
   useEffect(() => {
+    loadInitialRoutes()
+  }, [])
+
+  const loadInitialRoutes = () => {
     setLoading(true)
     setLoadingProgress(0)
 
-    // Simulate progress for better UX (actual progress from backend would require WebSocket/polling)
+    // Simulate progress for better UX
     const progressInterval = setInterval(() => {
       setLoadingProgress(prev => {
-        if (prev >= 90) return prev // Cap at 90% until real data arrives
+        if (prev >= 90) return prev
         return prev + Math.random() * 10
       })
     }, 500)
 
-    axios.get(`${API_URL}/routes`, {
-      timeout: 120000, // 2 minute timeout for large response
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
+    axios.get(`${API_URL}/routes?limit=100&offset=0`, {
+      timeout: 120000,
       responseType: 'json',
-      headers: {
-        'Accept': 'application/json'
-      }
+      headers: { 'Accept': 'application/json' }
     })
       .then(res => {
-        console.log('Response received, keys:', Object.keys(res.data))
-        console.log('Routes is array?', Array.isArray(res.data.routes))
-        console.log('Number of routes:', res.data.routes ? res.data.routes.length : 'routes is null/undefined')
-        console.log('Response data type:', typeof res.data)
-
         const routesData = res.data.routes || []
 
         if (routesData.length === 0) {
@@ -79,25 +78,91 @@ function Heatmap() {
           return
         }
 
-        console.log('Setting routes state with', routesData.length, 'routes')
+        console.log('Loaded initial', routesData.length, 'routes')
         setRoutes(routesData)
+        setTotalAvailable(res.data.total_routes || routesData.length)
+        setHasMore(res.data.has_more || false)
         if (res.data.center) {
           setCenter(res.data.center)
         }
         setLoadingProgress(100)
         clearInterval(progressInterval)
-        setTimeout(() => setLoading(false), 300) // Brief delay to show 100%
+        setTimeout(() => setLoading(false), 300)
       })
       .catch(err => {
         console.error('Error loading routes:', err)
-        console.error('Error details:', err.response || err.message)
         setError(err.response?.data?.error || err.message || 'Failed to load routes')
         clearInterval(progressInterval)
         setLoading(false)
       })
 
     return () => clearInterval(progressInterval)
-  }, [])
+  }
+
+  const loadMoreFromServer = () => {
+    if (loadingMore || !hasMore) return
+
+    setLoadingMore(true)
+    const offset = routes.length
+
+    axios.get(`${API_URL}/routes?limit=100&offset=${offset}`, {
+      timeout: 120000,
+      responseType: 'json',
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(res => {
+        const newRoutes = res.data.routes || []
+        console.log('Loaded', newRoutes.length, 'more routes (total:', routes.length + newRoutes.length, ')')
+
+        setRoutes(prev => [...prev, ...newRoutes])
+        setHasMore(res.data.has_more || false)
+        setLoadingMore(false)
+
+        // Auto-expand display limit to show new routes
+        setDisplayLimit(prev => prev + newRoutes.length)
+      })
+      .catch(err => {
+        console.error('Error loading more routes:', err)
+        setError(err.response?.data?.error || err.message || 'Failed to load more routes')
+        setLoadingMore(false)
+      })
+  }
+
+  const loadAllRoutes = async () => {
+    if (loadingMore || !hasMore) return
+
+    setLoadingMore(true)
+    let currentOffset = routes.length
+    let allNewRoutes = []
+    let stillHasMore = true
+
+    try {
+      while (stillHasMore) {
+        const res = await axios.get(`${API_URL}/routes?limit=100&offset=${currentOffset}`, {
+          timeout: 120000,
+          responseType: 'json',
+          headers: { 'Accept': 'application/json' }
+        })
+
+        const newRoutes = res.data.routes || []
+        allNewRoutes = [...allNewRoutes, ...newRoutes]
+        stillHasMore = res.data.has_more || false
+        currentOffset += newRoutes.length
+
+        console.log(`Loaded ${allNewRoutes.length} routes so far (total will be: ${routes.length + allNewRoutes.length})`)
+      }
+
+      console.log('Finished loading all routes:', routes.length + allNewRoutes.length, 'total')
+      setRoutes(prev => [...prev, ...allNewRoutes])
+      setHasMore(false)
+      setDisplayLimit(prev => prev + allNewRoutes.length)
+      setLoadingMore(false)
+    } catch (err) {
+      console.error('Error loading all routes:', err)
+      setError(err.response?.data?.error || err.message || 'Failed to load all routes')
+      setLoadingMore(false)
+    }
+  }
 
   // Group coordinates by pace to create colored segments
   const getRouteSegments = (route) => {
@@ -232,42 +297,90 @@ function Heatmap() {
               <div>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   Showing <span style={{ color: 'var(--accent-primary)', fontWeight: '600' }}>{Math.min(displayLimit, routes.length)}</span> of <span style={{ color: 'var(--accent-primary)', fontWeight: '600' }}>{routes.length}</span> routes on map
+                  {totalAvailable > routes.length && (
+                    <span> • <span style={{ color: 'var(--accent-primary)', fontWeight: '600' }}>{totalAvailable}</span> total available</span>
+                  )}
                 </p>
               </div>
-              {routes.length > displayLimit && (
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    onClick={() => setDisplayLimit(prev => Math.min(prev + 100, routes.length))}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: 'var(--accent-primary)',
-                      color: '#000',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Load 100 More
-                  </button>
-                  <button
-                    onClick={() => setDisplayLimit(routes.length)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(0, 245, 212, 0.1)',
-                      color: 'var(--accent-primary)',
-                      border: '1px solid var(--accent-primary)',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Load All ({routes.length})
-                  </button>
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {routes.length > displayLimit && (
+                  <>
+                    <button
+                      onClick={() => setDisplayLimit(prev => Math.min(prev + 100, routes.length))}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: 'var(--accent-primary)',
+                        color: '#000',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      Show 100 More
+                    </button>
+                    <button
+                      onClick={() => setDisplayLimit(routes.length)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: 'rgba(0, 245, 212, 0.1)',
+                        color: 'var(--accent-primary)',
+                        border: '1px solid var(--accent-primary)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      Show All Loaded ({routes.length})
+                    </button>
+                  </>
+                )}
+                {hasMore && (
+                  <>
+                    <button
+                      onClick={loadMoreFromServer}
+                      disabled={loadingMore}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: loadingMore ? 'rgba(255, 107, 157, 0.3)' : 'var(--accent-secondary)',
+                        color: '#000',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: loadingMore ? 'not-allowed' : 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.875rem',
+                        opacity: loadingMore ? 0.6 : 1
+                      }}
+                    >
+                      {loadingMore ? 'Loading...' : 'Load 100 More'}
+                    </button>
+                    <button
+                      onClick={loadAllRoutes}
+                      disabled={loadingMore}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        background: loadingMore ? 'rgba(0, 245, 212, 0.2)' : 'rgba(0, 245, 212, 0.1)',
+                        color: 'var(--accent-primary)',
+                        border: '1px solid var(--accent-primary)',
+                        borderRadius: '6px',
+                        cursor: loadingMore ? 'not-allowed' : 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.875rem',
+                        opacity: loadingMore ? 0.6 : 1
+                      }}
+                    >
+                      {loadingMore ? 'Loading All...' : `Load All (${totalAvailable - routes.length} remaining)`}
+                    </button>
+                  </>
+                )}
+                {!hasMore && routes.length > 0 && routes.length === totalAvailable && (
+                  <span style={{ padding: '0.5rem 1rem', color: 'var(--accent-primary)', fontSize: '0.875rem', fontWeight: '600' }}>
+                    ✓ All {routes.length} routes loaded!
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

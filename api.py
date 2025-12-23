@@ -18,9 +18,12 @@ import math
 
 load_dotenv()
 
-def simplify_route(coords, paces, max_points=50):
+def simplify_route(coords, paces, avg_pace=None, max_points=50):
     """Simplify GPS route by keeping every Nth point to reduce data size dramatically"""
     if len(coords) <= max_points:
+        # Still fill in None paces with average if available
+        if avg_pace is not None:
+            paces = [p if p is not None else avg_pace for p in paces]
         return coords, paces
 
     # Calculate step size to get approximately max_points
@@ -35,6 +38,10 @@ def simplify_route(coords, paces, max_points=50):
 
     simplified_coords = [coords[i] for i in indices]
     simplified_paces = [paces[i] if i < len(paces) else None for i in indices]
+
+    # Fill in None paces with average pace (either all or just missing ones)
+    if avg_pace is not None:
+        simplified_paces = [p if p is not None else avg_pace for p in simplified_paces]
 
     return simplified_coords, simplified_paces
 
@@ -359,6 +366,16 @@ def get_routes():
     # Check if we should use cache or force refresh
     force_refresh = request.args.get('refresh', 'false').lower() == 'true'
 
+    # Pagination parameters
+    limit = request.args.get('limit', '100')
+    offset = request.args.get('offset', '0')
+    try:
+        limit = min(int(limit), 200)  # Cap at 200 per request to prevent overload
+        offset = int(offset)
+    except:
+        limit = 100
+        offset = 0
+
     # Try to load from cache first
     cache_file = 'data/gps_routes_cache.json'
     if not force_refresh and os.path.exists(cache_file):
@@ -370,23 +387,37 @@ def get_routes():
             # Check if cache is recent (within 7 days)
             cache_time = datetime.fromisoformat(cached_data.get('cached_at', '2000-01-01'))
             if datetime.now() - cache_time < timedelta(days=7):
-                print(f"✅ Loaded {len(cached_data['routes'])} routes from cache")
+                total_routes = len(cached_data['routes'])
+                print(f"✅ Loaded {total_routes} routes from cache")
+
+                # Apply pagination (offset and limit)
+                start_idx = offset
+                end_idx = min(offset + limit, total_routes)
+                paginated_routes = cached_data['routes'][start_idx:end_idx]
 
                 # Simplify routes before sending to reduce response size
                 simplified_routes = []
-                for route in cached_data['routes']:
-                    coords, paces = simplify_route(route['coordinates'], route['paces'])
+                for route in paginated_routes:
+                    coords, paces = simplify_route(
+                        route['coordinates'],
+                        route['paces'],
+                        avg_pace=route.get('avg_pace')
+                    )
                     simplified_routes.append({
                         **route,
                         'coordinates': coords,
                         'paces': paces
                     })
 
-                print(f"📦 Simplified routes for faster transfer")
+                print(f"📦 Sending routes {start_idx}-{end_idx} ({len(simplified_routes)} routes) of {total_routes} total")
                 return jsonify({
                     'routes': simplified_routes,
                     'center': cached_data['center'],
-                    'total_routes': len(simplified_routes),
+                    'total_routes': total_routes,
+                    'returned_routes': len(simplified_routes),
+                    'offset': offset,
+                    'limit': limit,
+                    'has_more': end_idx < total_routes,
                     'cached': True,
                     'cached_at': cached_data['cached_at']
                 })
