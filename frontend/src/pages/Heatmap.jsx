@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet'
 import axios from 'axios'
 import 'leaflet/dist/leaflet.css'
+import { formatPace } from '../utils/formatters'
 
 const API_URL = 'http://localhost:5001/api'
 
@@ -495,7 +496,7 @@ function Heatmap() {
                   <div>
                     <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{route.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      {route.date} • Avg pace: {route.avg_pace} min/mi
+                      {route.date} • Avg pace: {formatPace(route.avg_pace)} /mi
                     </div>
                   </div>
                   <div style={{
@@ -506,7 +507,7 @@ function Heatmap() {
                     fontWeight: '600',
                     color: '#000'
                   }}>
-                    {route.avg_pace}
+                    {formatPace(route.avg_pace)}
                   </div>
                 </div>
               ))}

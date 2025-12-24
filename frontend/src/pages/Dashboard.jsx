@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Trophy, Zap, Mountain, Target, TrendingUp, Award } from 'lucide-react'
 import axios from 'axios'
+import { formatPace } from '../utils/formatters'
 
 const API_URL = 'http://localhost:5001/api'
 
@@ -84,8 +85,8 @@ function Dashboard({ stats }) {
             style={{ background: 'linear-gradient(135deg, var(--bg-card), rgba(255, 210, 63, 0.1))' }}
           >
             <Zap size={32} color="var(--accent-tertiary)" style={{ marginBottom: '1rem' }} />
-            <div className="stat-value">{stats.avg_pace}</div>
-            <div className="stat-label">Average Pace (min/mi)</div>
+            <div className="stat-value">{formatPace(stats.avg_pace)}</div>
+            <div className="stat-label">Average Pace (/mi)</div>
           </motion.div>
 
           <motion.div
@@ -202,7 +203,7 @@ function Dashboard({ stats }) {
                 }}>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{run.name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    <span>{run.pace_min_per_mi.toFixed(2)} min/mi</span>
+                    <span>{formatPace(run.pace_min_per_mi)} /mi</span>
                     <span>{run.distance_mi.toFixed(2)} mi</span>
                   </div>
                 </div>
@@ -256,7 +257,7 @@ function Dashboard({ stats }) {
                 }}>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{run.name}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    <span>{run.pace_min_per_mi.toFixed(2)} min/mi</span>
+                    <span>{formatPace(run.pace_min_per_mi)} /mi</span>
                     <span>{run.distance_mi.toFixed(2)} mi</span>
                   </div>
                 </div>

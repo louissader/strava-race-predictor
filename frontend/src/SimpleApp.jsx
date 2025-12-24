@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { formatPace } from './utils/formatters'
 
 function SimpleApp() {
   const [stats, setStats] = useState(null)
@@ -37,7 +38,7 @@ function SimpleApp() {
             </div>
             <div style={{ background: '#1a1f3a', padding: '1.5rem', borderRadius: '12px', border: '1px solid #ffd23f' }}>
               <div style={{ fontSize: '0.875rem', color: '#a0acd8' }}>BEST PACE</div>
-              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ffd23f' }}>{stats.best_pace}</div>
+              <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ffd23f' }}>{formatPace(stats.best_pace)}</div>
             </div>
             <div style={{ background: '#1a1f3a', padding: '1.5rem', borderRadius: '12px', border: '1px solid #4ade80' }}>
               <div style={{ fontSize: '0.875rem', color: '#a0acd8' }}>TOTAL HOURS</div>
