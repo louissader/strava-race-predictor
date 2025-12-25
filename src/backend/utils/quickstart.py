@@ -91,7 +91,7 @@ def train_models():
     print("=" * 70)
 
     try:
-        from train_model import main as train_main
+        from models.train_model import main as train_main
         train_main()
         print("✅ Models trained successfully")
         return True
@@ -106,7 +106,7 @@ def make_predictions():
     print("=" * 70)
 
     try:
-        from predict_race_time import predict_all_distances, print_prediction_report
+        from models.predict_race_time import predict_all_distances, print_prediction_report
         predictions = predict_all_distances()
         if predictions:
             print_prediction_report(predictions)

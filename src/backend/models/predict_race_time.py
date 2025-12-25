@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import joblib
 from datetime import datetime, timedelta
-from data_preprocessing import load_activities, calculate_training_features
+from utils.data_preprocessing import load_activities, calculate_training_features
 
 def load_model(distance):
     """Load trained model for a specific distance"""

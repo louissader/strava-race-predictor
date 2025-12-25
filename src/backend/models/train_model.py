@@ -13,7 +13,7 @@ from sklearn.linear_model import Ridge, Lasso
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import joblib
-from data_preprocessing import load_activities, create_race_dataset, prepare_features_for_ml
+from utils.data_preprocessing import load_activities, create_race_dataset, prepare_features_for_ml
 
 # Set style for plots
 sns.set_style("whitegrid")

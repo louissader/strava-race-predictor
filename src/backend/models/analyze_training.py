@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime, timedelta
-from data_preprocessing import load_activities
+from utils.data_preprocessing import load_activities
 
 # Set style
 sns.set_style("whitegrid")

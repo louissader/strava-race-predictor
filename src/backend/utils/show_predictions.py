@@ -4,7 +4,7 @@ Simple script to show what your models predict based on your racing history
 
 import joblib
 import pandas as pd
-from data_preprocessing import load_activities, create_race_dataset
+from utils.data_preprocessing import load_activities, create_race_dataset
 
 def main():
     print("=" * 70)

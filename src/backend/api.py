@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import joblib
-from data_preprocessing import load_activities, create_race_dataset, calculate_training_features
+from utils.data_preprocessing import load_activities, create_race_dataset, calculate_training_features
 import os
 import requests
 import json
@@ -252,6 +252,9 @@ def get_timeline_predictions():
         features = calculate_training_features(activities_df, current_date)
         feature_values = [features.get(fn, 0) or 0 for fn in feature_names]
 
+        # Replace any None values with 0 to avoid NaN errors
+        feature_values = [0 if v is None or (isinstance(v, float) and math.isnan(v)) else v for v in feature_values]
+
         X = np.array(feature_values).reshape(1, -1)
         X_scaled = scaler.transform(X)
         predicted_time = float(model.predict(X_scaled)[0])
@@ -259,8 +262,8 @@ def get_timeline_predictions():
         timeline.append({
             'date': current_date.strftime('%Y-%m-%d'),
             'predicted_time_min': round(predicted_time, 2),
-            'weekly_distance': round(float(features.get('past_7d_total_distance_km', 0)), 1),
-            'monthly_distance': round(float(features.get('past_30d_total_distance_km', 0)), 1)
+            'weekly_distance': round(float(features.get('past_7d_total_distance_km', 0) or 0), 1),
+            'monthly_distance': round(float(features.get('past_30d_total_distance_km', 0) or 0), 1)
         })
 
         current_date += timedelta(days=30)
@@ -377,7 +380,7 @@ def get_routes():
         offset = 0
 
     # Try to load from cache first
-    cache_file = 'data/gps_routes_cache.json'
+    cache_file = 'data/cache/gps_routes_cache.json'
     if not force_refresh and os.path.exists(cache_file):
         try:
             print("Loading GPS routes from cache...")

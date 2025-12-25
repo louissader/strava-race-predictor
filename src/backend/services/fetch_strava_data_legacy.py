@@ -6,7 +6,7 @@ import os
 import json
 import pandas as pd
 from datetime import datetime
-from strava_auth import get_client
+from services.strava_auth import get_client
 from dotenv import load_dotenv
 
 load_dotenv()

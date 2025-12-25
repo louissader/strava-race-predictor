@@ -12,7 +12,7 @@ import plotly.express as px
 import json
 from datetime import datetime, timedelta
 import joblib
-from data_preprocessing import load_activities, create_race_dataset, calculate_training_features
+from utils.data_preprocessing import load_activities, create_race_dataset, calculate_training_features
 import folium
 from folium.plugins import HeatMap
 import os
