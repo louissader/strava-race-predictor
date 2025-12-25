@@ -18,6 +18,9 @@ import math
 
 load_dotenv()
 
+# Get project root (2 levels up from api.py)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+
 def simplify_route(coords, paces, avg_pace=None, max_points=50):
     """Simplify GPS route by keeping every Nth point to reduce data size dramatically"""
     if len(coords) <= max_points:
@@ -181,7 +184,7 @@ def get_predictions():
 
     for distance in distances:
         try:
-            model_data = joblib.load(f'models/{distance.replace(" ", "_")}_model.joblib')
+            model_data = joblib.load(os.path.join(PROJECT_ROOT, f'models/{distance.replace(" ", "_")}_model.joblib'))
             races = race_df[race_df['race_distance'] == distance]
 
             if len(races) > 0:
@@ -232,7 +235,7 @@ def get_timeline_predictions():
     distance = request.args.get('distance', '5K')
 
     try:
-        model_data = joblib.load(f'models/{distance.replace(" ", "_")}_model.joblib')
+        model_data = joblib.load(os.path.join(PROJECT_ROOT, f'models/{distance.replace(" ", "_")}_model.joblib'))
         model = model_data['model']
         scaler = model_data['scaler']
         feature_names = model_data['feature_names']
@@ -380,7 +383,7 @@ def get_routes():
         offset = 0
 
     # Try to load from cache first
-    cache_file = 'data/cache/gps_routes_cache.json'
+    cache_file = os.path.join(PROJECT_ROOT, 'data/cache/gps_routes_cache.json')
     if not force_refresh and os.path.exists(cache_file):
         try:
             print("Loading GPS routes from cache...")

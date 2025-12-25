@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import axios from 'axios'
 import { formatPace, formatTime } from '../utils/formatters'
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001'
 
 function Timeline() {
   const [selectedDistance, setSelectedDistance] = useState('5K')
@@ -25,13 +25,13 @@ function Timeline() {
     try {
       const response = await axios.get(
         `${API_URL}/api/timeline_predictions?distance=${selectedDistance}`,
-        { timeout: 10000 }
+        { timeout: 30000 } // 30 seconds timeout
       )
       setTimelineData(response.data)
       setLoading(false)
     } catch (err) {
       console.error('Error fetching timeline data:', err)
-      setError('Failed to load timeline data')
+      setError('Timeline predictions unavailable. The ML models need to be retrained with your current scikit-learn version. Run: python3 src/backend/models/train_model.py')
       setLoading(false)
     }
   }
@@ -109,7 +109,12 @@ function Timeline() {
           <p className="page-subtitle">Prediction evolution over time</p>
         </div>
         <div className="card">
-          <p>Loading timeline data...</p>
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <p style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Loading timeline data...</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              Calculating predictions across your training history. This may take 10-20 seconds.
+            </p>
+          </div>
         </div>
       </motion.div>
     )

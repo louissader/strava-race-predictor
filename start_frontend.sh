@@ -3,4 +3,4 @@
 
 echo "Starting React Frontend..."
 cd src/frontend
-npm start
+npm run dev

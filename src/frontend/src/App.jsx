@@ -44,6 +44,29 @@ function NavBar() {
   )
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '50px', background: 'white', color: 'black' }}>
+          <h1>Something went wrong!</h1>
+          <pre>{this.state.error?.toString()}</pre>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 function App() {
   const [stats, setStats] = useState(null)
 
@@ -55,26 +78,28 @@ function App() {
   }, [])
 
   return (
-    <Router>
-      <div className="app">
-        <NavBar />
+    <ErrorBoundary>
+      <Router>
+        <div className="app">
+          <NavBar />
 
-        <main className="main-content">
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/" element={<Dashboard stats={stats} />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/heatmap" element={<Heatmap />} />
-              <Route path="/timeline" element={<Timeline />} />
-            </Routes>
-          </AnimatePresence>
-        </main>
+          <main className="main-content">
+            <AnimatePresence mode="wait">
+              <Routes>
+                <Route path="/" element={<Dashboard stats={stats} />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/heatmap" element={<Heatmap />} />
+                <Route path="/timeline" element={<Timeline />} />
+              </Routes>
+            </AnimatePresence>
+          </main>
 
-        <footer className="app-footer">
-          <p>Made with ❤️ for runners | Data from Strava</p>
-        </footer>
-      </div>
-    </Router>
+          <footer className="app-footer">
+            <p>Made with ❤️ for runners | Data from Strava</p>
+          </footer>
+        </div>
+      </Router>
+    </ErrorBoundary>
   )
 }
 

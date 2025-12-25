@@ -5,8 +5,14 @@ Data preprocessing and feature engineering for race time prediction
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import os
 
-def load_activities(filepath='data/strava_activities.csv'):
+# Get project root (2 levels up from this file)
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+
+def load_activities(filepath=None):
+    if filepath is None:
+        filepath = os.path.join(PROJECT_ROOT, 'data/processed/strava_activities.csv')
     """Load activities from CSV file"""
     df = pd.read_csv(filepath)
     df['start_date'] = pd.to_datetime(df['start_date'])
