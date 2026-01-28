@@ -1,15 +1,17 @@
 """
 Flask REST API for Strava Race Time Predictor
-Serves data to React frontend
+Serves data to React frontend with WebSocket support for real-time AI streaming
 """
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import joblib
 from utils.data_preprocessing import load_activities, create_race_dataset, calculate_training_features
+from services.ai_coach import build_training_context, chat as coach_chat, chat_stream, generate_training_plan, get_context_summary
 import os
 import requests
 import json
@@ -50,6 +52,10 @@ def simplify_route(coords, paces, avg_pace=None, max_points=50):
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
+
+# Initialize Socket.IO with CORS support for real-time streaming
+# Using threading mode for better compatibility with Flask debug mode
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Global data
 activities_df = None
@@ -537,9 +543,200 @@ def get_routes():
         'cached': False
     })
 
+# ============================================================
+# AI COACH ENDPOINTS
+# ============================================================
+
+def get_predictions_data():
+    """Helper function to get predictions for coach context"""
+    predictions = {}
+    distances = ['5K', '10K', 'Half Marathon', 'Marathon']
+
+    for distance in distances:
+        try:
+            model_data = joblib.load(os.path.join(PROJECT_ROOT, f'models/{distance.replace(" ", "_")}_model.joblib'))
+            races = race_df[race_df['race_distance'] == distance]
+
+            if len(races) > 0:
+                predictions[distance] = {
+                    'num_races': int(len(races)),
+                    'best_time_min': float(races['race_time_min'].min()),
+                    'avg_time_min': float(races['race_time_min'].mean()),
+                    'recent_time_min': float(races['race_time_min'].iloc[0]),
+                    'has_model': True
+                }
+            else:
+                predictions[distance] = {'has_model': False, 'num_races': 0}
+        except:
+            predictions[distance] = {'has_model': False, 'num_races': 0}
+
+    return predictions
+
+
+@app.route('/api/coach/context')
+def get_coach_context():
+    """Get training context for the coach"""
+    if activities_df is None or race_df is None:
+        load_data()
+
+    try:
+        predictions = get_predictions_data()
+        context = build_training_context(activities_df, race_df, predictions)
+        summary = get_context_summary(context)
+        return jsonify(summary)
+    except Exception as e:
+        print(f"Error building context: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/coach/chat', methods=['POST'])
+def coach_chat_endpoint():
+    """Chat with the AI running coach"""
+    if activities_df is None or race_df is None:
+        load_data()
+
+    try:
+        data = request.get_json()
+        user_message = data.get('message', '')
+        history = data.get('history', [])
+
+        if not user_message:
+            return jsonify({'error': 'Message is required'}), 400
+
+        # Build context
+        predictions = get_predictions_data()
+        context = build_training_context(activities_df, race_df, predictions)
+
+        # Get coach response
+        response = coach_chat(user_message, history, context)
+
+        # Get context summary for frontend
+        context_summary = get_context_summary(context)
+
+        return jsonify({
+            'response': response,
+            'context_summary': context_summary
+        })
+    except Exception as e:
+        print(f"Error in coach chat: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/coach/training-plan', methods=['POST'])
+def coach_training_plan():
+    """Generate a personalized training plan"""
+    if activities_df is None or race_df is None:
+        load_data()
+
+    try:
+        data = request.get_json()
+        goal_race = data.get('goal_race', '5K')
+        goal_time = data.get('goal_time', '')
+        weeks = data.get('weeks', 8)
+
+        if not goal_time:
+            return jsonify({'error': 'Goal time is required'}), 400
+
+        # Validate weeks
+        try:
+            weeks = int(weeks)
+            if weeks < 4:
+                weeks = 4
+            elif weeks > 24:
+                weeks = 24
+        except:
+            weeks = 8
+
+        # Build context
+        predictions = get_predictions_data()
+        context = build_training_context(activities_df, race_df, predictions)
+
+        # Generate plan
+        result = generate_training_plan(goal_race, goal_time, weeks, context)
+
+        return jsonify(result)
+    except Exception as e:
+        print(f"Error generating training plan: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# WEBSOCKET EVENTS FOR REAL-TIME STREAMING
+# ============================================================
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle client connection"""
+    print(f"Client connected: {request.sid}")
+    emit('connected', {'status': 'connected', 'sid': request.sid})
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnection"""
+    print(f"Client disconnected: {request.sid}")
+
+
+@socketio.on('coach_message')
+def handle_coach_message(data):
+    """
+    Handle incoming coach message and stream response back
+
+    Expected data format:
+    {
+        "message": "user's question",
+        "history": [{"role": "user/assistant", "content": "..."}]
+    }
+    """
+    global activities_df, race_df
+
+    if activities_df is None or race_df is None:
+        load_data()
+
+    user_message = data.get('message', '')
+    history = data.get('history', [])
+
+    if not user_message:
+        emit('coach_error', {'error': 'Message is required'})
+        return
+
+    try:
+        # Build context
+        predictions = get_predictions_data()
+        context = build_training_context(activities_df, race_df, predictions)
+
+        # Emit start event
+        emit('coach_stream_start', {'status': 'starting'})
+
+        # Stream response tokens
+        full_response = ""
+        for chunk in chat_stream(user_message, history, context):
+            if chunk['type'] == 'token':
+                full_response += chunk['text']
+                emit('coach_token', {'token': chunk['text']})
+            elif chunk['type'] == 'error':
+                emit('coach_error', {'error': chunk['text']})
+                return
+            elif chunk['type'] == 'done':
+                break
+
+        # Emit completion event with full response and context
+        context_summary = get_context_summary(context)
+        emit('coach_stream_end', {
+            'status': 'complete',
+            'full_response': full_response,
+            'context_summary': context_summary
+        })
+
+    except Exception as e:
+        print(f"Error in WebSocket coach message: {e}")
+        emit('coach_error', {'error': str(e)})
+
+
 if __name__ == '__main__':
     print("=" * 70)
     print("  STRAVA PREDICTOR API SERVER")
+    print("  with WebSocket support for real-time AI streaming")
     print("=" * 70)
     print("\nLoading data...")
 
@@ -549,8 +746,10 @@ if __name__ == '__main__':
         print(f"   Runs: {len(activities_df[activities_df['type'] == 'Run'])}")
         print("\n" + "=" * 70)
         print("  API Server running on:")
-        print("  http://localhost:5001")
+        print("  HTTP:      http://localhost:5001")
+        print("  WebSocket: ws://localhost:5001")
         print("=" * 70 + "\n")
-        app.run(debug=True, host='0.0.0.0', port=5001)
+        # Use socketio.run() instead of app.run() for WebSocket support
+        socketio.run(app, debug=True, host='0.0.0.0', port=5001, allow_unsafe_werkzeug=True)
     else:
         print("❌ Failed to load data.")

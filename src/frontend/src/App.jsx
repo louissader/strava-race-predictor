@@ -2,11 +2,12 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, TrendingUp, Map, BarChart3, Trophy } from 'lucide-react'
+import { Home, TrendingUp, Map, BarChart3, Trophy, Bot } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import Analytics from './pages/Analytics'
 import Heatmap from './pages/Heatmap'
 import Timeline from './pages/Timeline'
+import Coach from './pages/Coach'
 import './App.css'
 
 function NavBar() {
@@ -17,6 +18,7 @@ function NavBar() {
     { path: '/analytics', icon: BarChart3, label: 'Analytics' },
     { path: '/heatmap', icon: Map, label: 'Heatmap' },
     { path: '/timeline', icon: TrendingUp, label: 'Timeline' },
+    { path: '/coach', icon: Bot, label: 'Coach' },
   ]
 
   return (
@@ -90,6 +92,7 @@ function App() {
                 <Route path="/analytics" element={<Analytics />} />
                 <Route path="/heatmap" element={<Heatmap />} />
                 <Route path="/timeline" element={<Timeline />} />
+                <Route path="/coach" element={<Coach />} />
               </Routes>
             </AnimatePresence>
           </main>
